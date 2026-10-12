@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     "Adidas Brand Site, adidas, shoes, sneakers, superstar, samba, gazelle, AI e-commerce, AI chat, moonshotai, Kimi-K2-Instruct, semantic search, sentence-transformers, all-mpnet-base-v2, AI product comparison, AI recommendations, natural language search, vector search, embeddings, product discovery, conversational AI, AI-powered UX, intelligent shopping, Next.js, React 19, TypeScript, Tailwind CSS, GSAP, Framer Motion, R3F, React Query, modern web development",
   metadataBase: new URL("https://weiser-adidas.vercel.app"),
   authors: [
-    { name: "Peter Weiser", url: "https://github.com/Pizzaboi87" },
+    { name: "Peter Weiser", url: "https://github.com/weiserdev" },
     { name: "Adidas Brand Site", url: "https://weiser-adidas.vercel.app" },
   ],
   openGraph: {
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     description:
       "Explore Adidas shoes with AI-powered comparisons, natural-language search, and intelligent recommendations.",
     images: ["https://weiser-adidas.vercel.app/og-image.png"],
-    creator: "@Pizzaboi87",
+    creator: "@weiserdev",
   },
 };
 

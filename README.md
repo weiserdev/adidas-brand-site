@@ -153,7 +153,7 @@ https://weiser-adidas.vercel.app/og-image.png
 ## 🧑‍💻 Author
 
 **Peter Weiser**  
-[GitHub @Pizzaboi87](https://github.com/Pizzaboi87) · [Portfolio](https://peterweiser.com)
+[GitHub @weiserdev](https://github.com/weiserdev) · [Portfolio](https://peterweiser.com)
 
 ---
 

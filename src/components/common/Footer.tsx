@@ -136,13 +136,13 @@ const Footer = () => (
 
             <div className="flex justify-start items-center mt-4 pb-4">
                 <Link
-                    href="https://github.com/Pizzaboi87/adidas-brand-site"
+                    href="https://github.com/weiserdev/adidas-brand-site"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-x-2 text-white hover:text-gray-300 transition-colors"
                 >
                     <Icon icon="mdi:github" width="24" height="24" className="text-white" />
-                    <span>Pizzaboi87</span>
+                    <span>weiserdev</span>
                 </Link>
             </div>
         </div>
