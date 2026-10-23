@@ -1,3 +1,4 @@
+import { getPublicAiError } from "@/lib/ai-service-error";
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
@@ -68,11 +69,12 @@ export async function POST(req: Request) {
         return NextResponse.json({
             output: completion.choices[0].message?.content || null,
         });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("HF API error:", err);
+        const failure = getPublicAiError(err);
         return NextResponse.json(
-            { error: "Something went wrong", details: String(err) },
-            { status: 500 }
+            { error: failure.error, aiUnavailable: failure.aiUnavailable },
+            { status: failure.status }
         );
     }
 }

@@ -1,3 +1,4 @@
+import AiUnavailable from "@/components/common/AiUnavailable";
 import Typed from "typed.js";
 import toast from "react-hot-toast";
 import { useCompareAnalysis } from "@/hooks/useCompareAnalysis";
@@ -11,7 +12,6 @@ const AICompare = ({ elements }: { elements: Shoe[] }) => {
         data,
         isPending,
         isError,
-        error,
     } = useCompareAnalysis();
 
     const { compareResult, setCompareResult } = useCompare();
@@ -90,12 +90,10 @@ const AICompare = ({ elements }: { elements: Shoe[] }) => {
             {/* --- AI OUTPUT FIELD --- */}
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-inner min-h-[6rem]">
                 {isError && (
-                    <p className="text-red-600 font-semibold">
-                        Error: {error.message}
-                    </p>
+                    <AiUnavailable />
                 )}
 
-                {!isPending && !data?.output && !compareResult && (
+                {!isPending && !isError && !data?.output && !compareResult && (
                     <p className="text-gray-600 italic">
                         Click <strong>Compare with AI</strong> to see how our model analyzes heritage, comfort, and style - and recommends the best match for you.
                     </p>

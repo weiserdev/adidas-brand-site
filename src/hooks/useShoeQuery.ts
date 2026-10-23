@@ -21,8 +21,8 @@ const postShoes = async (
     });
     if (!res.ok) {
         // Keep error text to help debug server issues
-        const text = await res.text().catch(() => "");
-        throw new Error(`Search failed: ${res.status} ${text}`);
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Unable to load products right now.");
     }
     return (await res.json()) as SearchResponse;
 };

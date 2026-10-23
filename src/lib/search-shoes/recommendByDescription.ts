@@ -1,3 +1,4 @@
+
 import { embedQuery } from "./embeddings";
 import { query } from "./db";
 import { Gender } from "@/types/types";
@@ -38,6 +39,7 @@ const descriptionToQueryText = (d: unknown): string => {
                     .join(" ")
             );
         }
+
         if (Array.isArray(o.tags)) {
             parts.push(
                 (o.tags as unknown[])
@@ -88,6 +90,7 @@ const mapRow = (r: Row) => ({
 export const recommendByDescription = async (input: Input) => {
     const queryText = descriptionToQueryText(input.description);
     const topK = Math.max(1, Math.min(input.topK ?? 4, 10));
+
     if (!queryText) return [];
 
     // 1) Embed once
@@ -111,15 +114,17 @@ export const recommendByDescription = async (input: Input) => {
   `;
 
     // 2) With threshold
-    // Params: $1 = vector, $2 = excludeSlug? , last = LIMIT
-    const paramsWithThreshold: any[] = [vecLiteral];
+    // Params: $1 = vector, $2 = excludeSlug?, last = LIMIT
+    const paramsWithThreshold: unknown[] = [vecLiteral];
     const wherePartsWithThreshold: string[] = [
         `(1.0 - (embedding <=> $1::vector)) >= ${MIN_SIM}`,
     ];
+
     if (input.excludeSlug) {
         paramsWithThreshold.push(input.excludeSlug);
         wherePartsWithThreshold.push(`slug <> $${paramsWithThreshold.length}`);
     }
+
     paramsWithThreshold.push(topK);
 
     const sqlWithThreshold = `
@@ -129,18 +134,24 @@ export const recommendByDescription = async (input: Input) => {
     LIMIT $${paramsWithThreshold.length};
   `;
 
-    const { rows: first } = await query(sqlWithThreshold, paramsWithThreshold as any[]);
+    const { rows: first } = await query<Row>(
+        sqlWithThreshold,
+        paramsWithThreshold
+    );
+
     if (first.length >= topK) {
         return first.map(mapRow);
     }
 
     // 3) Fallback without threshold, but still exclude self if provided
-    const paramsFallback: any[] = [vecLiteral];
+    const paramsFallback: unknown[] = [vecLiteral];
     const wherePartsFallback: string[] = [];
+
     if (input.excludeSlug) {
         paramsFallback.push(input.excludeSlug);
         wherePartsFallback.push(`slug <> $${paramsFallback.length}`);
     }
+
     paramsFallback.push(topK);
 
     const sqlFallback = `
@@ -150,6 +161,10 @@ export const recommendByDescription = async (input: Input) => {
     LIMIT $${paramsFallback.length};
   `;
 
-    const { rows: second } = await query(sqlFallback, paramsFallback as any[]);
+    const { rows: second } = await query<Row>(
+        sqlFallback,
+        paramsFallback
+    );
+
     return second.map(mapRow);
 };

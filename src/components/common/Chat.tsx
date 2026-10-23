@@ -1,5 +1,7 @@
 "use client"
 
+import { AI_DEMO_URL, AI_UNAVAILABLE_MESSAGE, AI_UNAVAILABLE_TITLE } from "@/lib/ai-service-error";
+
 import { useDisableScroll } from "@/hooks/useDisableScroll"
 import { Icon } from "@iconify/react"
 import { useEffect, useRef, useState } from "react"
@@ -101,19 +103,19 @@ const Chat = () => {
 
             const data = await res.json();
 
-            if (data.output) {
+            if (res.ok && data.output) {
                 setMessages((prev) => [...prev, { role: "assistant", content: data.output }])
             } else {
                 setMessages((prev) => [
                     ...prev,
-                    { role: "assistant", content: "Sorry, something went wrong. Can I help you with anything else about Adidas?" },
+                    { role: "assistant", content: AI_UNAVAILABLE_MESSAGE },
                 ])
             }
         } catch (err) {
             console.error("Chat error:", err);
             setMessages((prev) => [
                 ...prev,
-                { role: "assistant", content: "Sorry, something went wrong. Can I help you with anything else about Adidas?" },
+                { role: "assistant", content: AI_UNAVAILABLE_MESSAGE },
             ])
         } finally {
             setLoading(false);
@@ -153,7 +155,13 @@ const Chat = () => {
                                     : "bg-gray-100 text-gray-900 shadow-sm"
                                     }`}
                             >
-                                {msg.content}
+                                {msg.role === "assistant" && msg.content === AI_UNAVAILABLE_MESSAGE ? (
+                                    <>
+                                        <span className="block font-semibold mb-2">{AI_UNAVAILABLE_TITLE}</span>
+                                        <span>{msg.content}</span>
+                                        <a href={AI_DEMO_URL} target="_blank" rel="noopener noreferrer" className="block mt-2 font-semibold underline underline-offset-4">Watch Video Demo →</a>
+                                    </>
+                                ) : msg.content}
                             </p>
                         ))}
                         {loading && (

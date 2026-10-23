@@ -1,43 +1,41 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Pool } from "pg";
+import type { QueryResultRow } from "pg";
 
-const ssl =
-    process.env.PGSSL === "true"
-        ? {
-            ca:
-                process.env.PGSSL_CA ||
-                (process.env.PGSSL_CA_PATH
-                    ? fs.readFileSync(
-                        path.resolve(process.cwd(), process.env.PGSSL_CA_PATH),
-                        "utf8"
-                    )
-                    : undefined),
-            rejectUnauthorized: Boolean(
-                process.env.PGSSL_CA || process.env.PGSSL_CA_PATH
-            ),
-        }
+// Aiven's CA certificate takes precedence and enables verified TLS automatically.
+const caPath = process.env.PGSSL_CA_PATH;
+const ca = process.env.PGSSL_CA ||
+    (caPath
+        ? fs.readFileSync(path.resolve(/* turbopackIgnore: true */ process.cwd(), caPath), "utf8")
+        : undefined);
+
+const ssl = ca
+    ? { ca, rejectUnauthorized: true }
+    : process.env.PGSSL === "true"
+        ? { rejectUnauthorized: true }
         : undefined;
 
 export const pool = new Pool({
     host: process.env.PGHOST,
-    port: Number(process.env.PGPORT),
+    port: Number(process.env.PGPORT || 5432),
     database: process.env.PGDATABASE,
     user: process.env.PGUSER,
     password: process.env.PGPASSWORD,
     ssl,
+    connectionTimeoutMillis: 10000,
+    query_timeout: 15000,
 });
 
-// Ensure search_path for every new connection so we can use unqualified table names
+// Ensure search_path for every new connection
 pool.on("connect", (client) => {
-    // Keep 'public' for extensions like pgvector
-    client.query("SET search_path TO shoes, public");
+    // Keep public for extensions like pgvector
+    void client.query("SET search_path TO shoes, public");
 });
 
-import type { QueryResultRow } from "pg";
-
-export const query = async <T extends QueryResultRow = any>(sql: string, params: any[] = []) => {
-    // Use parameterized queries to avoid SQL injection
-    const res = await pool.query<T>(sql, params);
-    return res;
+export const query = async <T extends QueryResultRow = any>(
+    sql: string,
+    params: unknown[] = []
+) => {
+    return pool.query<T>(sql, params);
 };

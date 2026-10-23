@@ -1,7 +1,8 @@
 "use client";
 
+import AiUnavailable from "@/components/common/AiUnavailable";
+
 import ShoeCard from "../shoes/ShoeCard";
-import NotFound from "../common/NotFound";
 import Image from "next/image";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +26,6 @@ const Recommendation = ({ description, excludeSlug }: Props) => {
         isLoading,
         isFetching,
         isError,
-        error
     } = useQuery<Shoe[]>({
         queryKey: ["recommendations", descriptionText, excludeSlug],
         queryFn: async () => {
@@ -56,7 +56,14 @@ const Recommendation = ({ description, excludeSlug }: Props) => {
     });
 
     // If the query errors or there is nothing to show, render nothing.
-    if (isError) return <NotFound errorMsg={error.message} />
+    if (isError) return (
+        <section className="container mx-auto mt-24 px-5 sm:px-0">
+            <h2 className="font-doodle text-4xl sm:text-5xl lg:text-6xl mb-5 text-blue-800">AI suggestions</h2>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-inner">
+                <AiUnavailable />
+            </div>
+        </section>
+    );
     if (!isLoading && items.length === 0) return null;
 
     return (

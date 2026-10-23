@@ -30,6 +30,7 @@ Thumbs.db
 # SSL / certs
 *.pem
 aiven-ca.pem
+/certificates/
 
 # IDE / editors
 .vscode/

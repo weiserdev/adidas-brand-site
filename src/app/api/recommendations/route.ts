@@ -1,3 +1,4 @@
+import { getPublicAiError } from "@/lib/ai-service-error";
 import { NextRequest, NextResponse } from "next/server";
 import { recommendByDescription } from "@/lib/search-shoes/recommendByDescription";
 
@@ -20,10 +21,12 @@ export const POST = async (req: NextRequest) => {
         });
 
         return NextResponse.json({ items }, { status: 200 });
-    } catch (err: any) {
+    } catch (err: unknown) {
+        console.error("Recommendations failed:", err);
+        const failure = getPublicAiError(err);
         return NextResponse.json(
-            { error: err?.message ?? "Internal error" },
-            { status: 500 }
+            { error: failure.error, aiUnavailable: failure.aiUnavailable },
+            { status: failure.status }
         );
     }
 };
