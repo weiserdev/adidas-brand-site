@@ -22,10 +22,20 @@ const postShoes = async (
     if (!res.ok) {
         // Keep error text to help debug server issues
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Unable to load products right now.");
+        throw new ShoeSearchError(
+            typeof data?.error === "string" ? data.error : "Unable to load products right now.",
+            data?.aiUnavailable === true
+        );
     }
     return (await res.json()) as SearchResponse;
 };
+
+export class ShoeSearchError extends Error {
+    constructor(message: string, public readonly aiUnavailable: boolean) {
+        super(message);
+        this.name = "ShoeSearchError";
+    }
+}
 
 //Legacy helper returning a manual `search()` function.
 // Kept for backward compatibility with existing call sites.

@@ -1,10 +1,12 @@
+
 "use client";
 
 import Image from "next/image";
 import Loading, { LoadingSpinner } from "@/components/common/Loading";
 import NotFound from "@/components/common/NotFound";
 import FilterPanel from "@/components/shoes/FilterPanel";
-import { useShoesQuery } from "@/hooks/useShoeQuery";
+import { ShoeSearchError, useShoesQuery } from "@/hooks/useShoeQuery";
+import AiUnavailable from "@/components/common/AiUnavailable";
 import { useCallback, useMemo, useState, KeyboardEvent } from "react";
 
 import type { FilterState, SortOption, Shoe } from "@/types/types";
@@ -42,7 +44,11 @@ const Content = () => {
 
     const facets = useMemo(
         () =>
-            data?.facets ?? { minPrice: null, maxPrice: null, countries: [] as string[] },
+            data?.facets ?? {
+                minPrice: null,
+                maxPrice: null,
+                countries: [] as string[],
+            },
         [data]
     );
 
@@ -62,11 +68,15 @@ const Content = () => {
     }, []);
 
     const handleFilterChange = (next: FilterState) => {
+        setAiQuery(undefined);
+        setAiDraft("");
         setFilters(next);
         setPage(1);
     };
 
     const handleResetFilters = () => {
+        setAiQuery(undefined);
+        setAiDraft("");
         setFilters(DEFAULT_FILTERS);
         setPage(1);
     };
@@ -81,42 +91,72 @@ const Content = () => {
     // Derived values
     const total = data?.total ?? 0;
     const totalPages = data?.totalPages ?? 1;
-    const showingStart = total ? (data!.page - 1) * (data!.pageSize || PAGE_SIZE) + 1 : 0;
-    const showingEnd = total ? Math.min(data!.page * (data!.pageSize || PAGE_SIZE), total) : 0;
+
+    const showingStart = total
+        ? (data!.page - 1) * (data!.pageSize || PAGE_SIZE) + 1
+        : 0;
+
+    const showingEnd = total
+        ? Math.min(data!.page * (data!.pageSize || PAGE_SIZE), total)
+        : 0;
 
     // Local sorting for AI results
     const sortedItems: Shoe[] = useMemo(() => {
         if (!data?.items) return [];
+
         if (aiQuery) {
             const items = [...data.items];
+
             const compareMap = {
-                "price-asc": (a: Shoe, b: Shoe) => (a.avg_price ?? 0) - (b.avg_price ?? 0),
-                "price-desc": (a: Shoe, b: Shoe) => (b.avg_price ?? 0) - (a.avg_price ?? 0),
-                "rank-asc": (a: Shoe, b: Shoe) => (a.rank ?? 0) - (b.rank ?? 0),
-                "rank-desc": (a: Shoe, b: Shoe) => (b.rank ?? 0) - (a.rank ?? 0),
-                "name-asc": (a: Shoe, b: Shoe) => a.title.localeCompare(b.title),
-                "name-desc": (a: Shoe, b: Shoe) => b.title.localeCompare(a.title),
+                "price-asc": (a: Shoe, b: Shoe) =>
+                    (a.avg_price ?? 0) - (b.avg_price ?? 0),
+                "price-desc": (a: Shoe, b: Shoe) =>
+                    (b.avg_price ?? 0) - (a.avg_price ?? 0),
+                "rank-asc": (a: Shoe, b: Shoe) =>
+                    (a.rank ?? 0) - (b.rank ?? 0),
+                "rank-desc": (a: Shoe, b: Shoe) =>
+                    (b.rank ?? 0) - (a.rank ?? 0),
+                "name-asc": (a: Shoe, b: Shoe) =>
+                    a.title.localeCompare(b.title),
+                "name-desc": (a: Shoe, b: Shoe) =>
+                    b.title.localeCompare(a.title),
             };
-            const compare = compareMap[sortOption as keyof typeof compareMap];
+
+            const compare =
+                compareMap[sortOption as keyof typeof compareMap];
+
             return compare ? items.sort(compare) : items;
         }
+
         return data.items;
     }, [data?.items, aiQuery, sortOption]);
 
-    if (isLoading) return <Loading />;
-    if (error) return <NotFound errorMsg={error.message ?? "Unknown error"} />;
+    // An exhausted AI quota is a search-mode limitation, not a page failure.
+    const aiUnavailable = Boolean(
+        aiQuery &&
+        error instanceof ShoeSearchError &&
+        error.aiUnavailable
+    );
+
+    if (isLoading && !aiUnavailable) return <Loading />;
+
+    if (error && !aiUnavailable) {
+        return (
+            <NotFound errorMsg={error.message ?? "Unknown error"} />
+        );
+    }
 
     return (
-        <main className="relative flex lg:flex-row flex-col min-h-[100dvh] w-full pb-[5rem] 2xl:pb-[10rem]">
+        <main className="relative flex min-h-[100dvh] w-full flex-col pb-[5rem] lg:flex-row 2xl:pb-[10rem]">
             <Image
                 src="/splash/corner.webp"
                 alt="splash"
                 width={1600}
                 height={1200}
-                className="fixed 2xl:w-1/2 h-auto top-0 left-0 opacity-50 z-[-1]"
+                className="fixed top-0 left-0 z-[-1] h-auto opacity-50 2xl:w-1/2"
             />
 
-            <aside className="sm:w-3/4 lg:w-80 lg:flex-shrink-0 h-fit lg:sticky top-[5.5rem]">
+            <aside className="top-[5.5rem] h-fit sm:w-3/4 lg:sticky lg:w-80 lg:flex-shrink-0">
                 <FilterPanel
                     filters={filters}
                     onChange={handleFilterChange}
@@ -125,7 +165,7 @@ const Content = () => {
                 />
             </aside>
 
-            <div className="lg:flex-1 font-adineu p-6">
+            <div className="p-6 font-adineu lg:min-w-0 lg:flex-1">
                 <Controls
                     aiDraft={aiDraft}
                     onAiChange={setAiDraft}
@@ -140,20 +180,57 @@ const Content = () => {
                     setPage={setPage}
                 />
 
-                {isFetching ? (
-                    <div className="h-[60dvh] flex justify-center">
+                {aiUnavailable ? (
+                    <section
+                        role="status"
+                        className="relative mx-auto mt-4 w-full max-w-4xl"
+                    >
+                        <div className="relative rounded-xl border border-gray-200 bg-gray-50 px-6 pt-6 pb-[150px] shadow-sm md:min-h-[320px] md:p-6 md:pr-[210px]">
+                            <div className="relative z-10">
+                                <AiUnavailable />
+
+                                <p className="mt-4 text-sm leading-relaxed text-gray-600">
+                                    Regular shoe filters are still available. Clear your AI
+                                    search or choose a filter to browse the collection.
+                                </p>
+
+                                <button
+                                    type="button"
+                                    onClick={clearAiQuery}
+                                    className="mt-4 cursor-pointer rounded-md bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+                                >
+                                    Browse Shoes
+                                </button>
+                            </div>
+                        </div>
+
+                        <Image
+                            src="/other/exhausted.png"
+                            alt="A tired Adidas AI robot taking a break"
+                            width={580}
+                            height={700}
+                            sizes="(max-width: 767px) 180px, 250px"
+                            className="pointer-events-none absolute -bottom-21 right-2 h-auto w-[180px] object-contain md:-right-5 md:-bottom-29 md:w-[250px]"
+                        />
+                    </section>
+                ) : isFetching ? (
+                    <div className="flex h-[60dvh] justify-center">
                         <LoadingSpinner />
                     </div>
                 ) : (
                     <ShoeGrid items={sortedItems} />
                 )}
 
-                {totalPages > 1 && !isFetching && (
+                {!aiUnavailable && totalPages > 1 && !isFetching && (
                     <Pagination
                         currentPage={data?.page ?? 1}
                         totalPages={totalPages}
-                        onPrev={() => setPage((p) => Math.max(1, p - 1))}
-                        onNext={() => setPage((p) => p + 1)}
+                        onPrev={() =>
+                            setPage((p) => Math.max(1, p - 1))
+                        }
+                        onNext={() =>
+                            setPage((p) => p + 1)
+                        }
                     />
                 )}
             </div>
@@ -161,4 +238,4 @@ const Content = () => {
     );
 };
 
-export default Content
+export default Content;
